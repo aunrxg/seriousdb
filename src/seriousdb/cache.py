@@ -4,7 +4,7 @@ import os
 import time
 from threading import Lock
 
-from fastapi import HTTPException
+from .exceptions import ResourceNotFoundError, ServiceUnavailableError
 
 logger = logging.getLogger(__name__)
 
@@ -19,37 +19,23 @@ class Cache:
 
     def insert(self, key: str, value: str) -> tuple[str, bool]:
         with self.lock:
-            if self.db is None:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Database file {self.filename} could not be opened and loaded",
-                )
-            is_new_key = key not in self.db
-            self.db[key] = value
+            db = require_db(self)
+            is_new_key = key not in db
+            db[key] = value
         return value, is_new_key
 
     def select(self, key: str) -> str:
         with self.lock:
-            if self.db is None:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Database file {self.filename} could not be opened and loaded",
-                )
-            val = self.db.get(key, None)
+            val = require_db(self).get(key, None)
         if val is None:
-            raise HTTPException(status_code=404, detail=f"No value set for key {key}")
+            raise ResourceNotFoundError(f"No value set for key {key}")
         return val
 
     def delete(self, key: str) -> str:
         with self.lock:
-            if self.db is None:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Database file {self.filename} could not be opened and loaded",
-                )
-            val = self.db.pop(key, None)
+            val = require_db(self).pop(key, None)
         if val is None:
-            raise HTTPException(status_code=404, detail=f"No value set for key {key}")
+            raise ResourceNotFoundError(f"No value set for key {key}")
         return val
 
     def load(self, filename: str) -> None:
@@ -88,3 +74,13 @@ def _write_default(filename: str) -> dict[str, str]:
     with open(filename, "wb") as f:
         f.write(json.dumps(DEFAULT_DB).encode())
     return dict(DEFAULT_DB)
+
+
+def require_db(cache: Cache) -> dict[str, str]:
+    """Return the loaded database or fail with an expected application error."""
+    if cache.db is None:
+        raise ServiceUnavailableError(
+            f"Database file {cache.filename} could not be opened and loaded"
+        )
+
+    return cache.db
