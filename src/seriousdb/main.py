@@ -1,3 +1,4 @@
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -13,7 +14,7 @@ from fastapi import (
 )
 
 from .cache import Cache, require_db
-from .config import DB_FILE
+from .config import DB_FILE, LOG_LEVEL
 from .error_handlers import register_exception_handlers
 
 cache = Cache()
@@ -21,6 +22,7 @@ cache = Cache()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    logging.basicConfig(level=LOG_LEVEL.upper())
     cache.load(DB_FILE)
     yield
 
@@ -63,12 +65,18 @@ def get_all(cache: Annotated[Cache, Depends(get_cache)]) -> dict[str, str]:
         return require_db(cache).copy()
 
 
+@app.get("/db/count")
+def count(cache: Annotated[Cache, Depends(get_cache)]):
+    with cache.lock:
+        return len(require_db(cache).copy())
+
+
 @app.delete("/db")
 def delete(
     key: str,
     background_tasks: BackgroundTasks,
     cache: Annotated[Cache, Depends(get_cache)],
-):
+) -> str:
     value = cache.delete(key)
     background_tasks.add_task(cache.flush)
     return value

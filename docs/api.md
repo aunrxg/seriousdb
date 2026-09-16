@@ -13,8 +13,8 @@ Stores or updates a key-value pair.
 
 Parameters:
 
-* `key` - The key to store. Must contain at least one character.
-* `value` - The value associated with the key.
+- `key` - The key to store. Must contain at least one character.
+- `value` - The value associated with the key.
 
 For example:
 
@@ -58,13 +58,13 @@ Reports whether the database cache has finished loading.
 When the service is ready, the endpoint returns `200`:
 
 ```json
-{"status": "ok"}
+{ "status": "ok" }
 ```
 
 If the cache is not ready, it returns `503`:
 
 ```json
-{"detail": "Service unavailable"}
+{ "detail": "Service unavailable" }
 ```
 
 ### HEAD `/db`
@@ -101,13 +101,41 @@ returns:
 }
 ```
 
+### GET `/db/count`
+
+Returns the number of key-value pairs currently stored in the database.
+
+For example:
+
+```text
+GET /db/count
+```
+
+If the database contains:
+
+```json
+{
+  "default": "default",
+  "name": "Alice",
+  "language": "Python"
+}
+```
+
+returns:
+
+```text
+3
+```
+
+> **Note:** The count includes the `default` key if it is present in the database.
+
 ### DELETE `/db`
 
 Deletes a key-value pair.
 
 Parameters:
 
-* `key` - The key to delete.
+- `key` - The key to delete.
 
 For example:
 
@@ -130,8 +158,8 @@ All errors share the same JSON structure:
 }
 ```
 
-* `detail` - a human readable message. For request validation errors this is the list of problems reported by FastAPI.
-* `error` - a stable, machine readable code.
+- `detail` - a human readable message. For request validation errors this is the list of problems reported by FastAPI.
+- `error` - a stable, machine readable code.
 
 | Status | `error`                    | Meaning                                                      |
 | ------ | -------------------------- | ------------------------------------------------------------ |
