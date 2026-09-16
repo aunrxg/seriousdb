@@ -17,15 +17,16 @@ class Cache:
         self.db: dict[str, str] | None = None
         self.lock = Lock()
 
-    def insert(self, key: str, value: str) -> str:
+    def insert(self, key: str, value: str) -> tuple[str, bool]:
         with self.lock:
             if self.db is None:
                 raise HTTPException(
                     status_code=500,
                     detail=f"Database file {self.filename} could not be opened and loaded",
                 )
+            is_new_key = key not in self.db
             self.db[key] = value
-        return value
+        return value, is_new_key
 
     def select(self, key: str) -> str:
         with self.lock:

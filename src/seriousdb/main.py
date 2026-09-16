@@ -2,7 +2,15 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Query,
+    Response,
+    status,
+)
 
 from .cache import Cache
 from .config import DB_FILE
@@ -31,8 +39,7 @@ def put(
     cache: Annotated[Cache, Depends(get_cache)],
     response: Response,
 ) -> str:
-    is_new_key = key not in cache.db
-    cache.insert(key, value)
+    value, is_new_key = cache.insert(key, value)
     response.status_code = status.HTTP_201_CREATED if is_new_key else status.HTTP_200_OK
     background_tasks.add_task(cache.flush)
     return value
